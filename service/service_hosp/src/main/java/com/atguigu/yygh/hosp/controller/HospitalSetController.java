@@ -6,9 +6,9 @@ import com.atguigu.yygh.hosp.service.HospitalSetService;
 import com.atguigu.yygh.model.hosp.HospitalSet;
 import com.atguigu.yygh.vo.hosp.HospitalSetQueryVo;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +19,7 @@ import java.util.Random;
  * @create 2023-05-28-14:44
  */
 @RestController
+@CrossOrigin
 @RequestMapping("/admin/hosp/hospitalSet")
 public class HospitalSetController {
 
@@ -58,17 +59,17 @@ public class HospitalSetController {
     }
 
     //3.条件查询带分页
-    @GetMapping("/findPage/{current}/{limit}")
-    public Result findPageHospSet(@PathVariable long current, @PathVariable long limit, HospitalSetQueryVo hospitalSetQueryVo){
+    @PostMapping("/findPageHospSet/{current}/{limit}")
+    public Result findPageHospSet(@PathVariable long current, @PathVariable long limit,@RequestBody(required = false) HospitalSetQueryVo hospitalSetQueryVo){
 
         Page<HospitalSet> page = new Page<>(current,limit);
-
         LambdaQueryWrapper<HospitalSet> wrapper = new LambdaQueryWrapper<>();
-        if (StringUtils.hasText(hospitalSetQueryVo.getHosname())){
+
+        if (hospitalSetQueryVo != null && StringUtils.isNotBlank(hospitalSetQueryVo.getHosname())){
 
             wrapper.like(HospitalSet::getHosname,hospitalSetQueryVo.getHosname());
         }
-        if (StringUtils.hasText(hospitalSetQueryVo.getHoscode())) {
+        if (hospitalSetQueryVo != null && StringUtils.isNotBlank(hospitalSetQueryVo.getHoscode())) {
             wrapper.eq(HospitalSet::getHoscode,hospitalSetQueryVo.getHoscode());
 
         }
@@ -98,12 +99,14 @@ public class HospitalSetController {
     //5.根据id获取医院设置
     @GetMapping("getHospSet/{id}")
     public Result getHospSet(@PathVariable Long id){
+
+
         HospitalSet hospitalSet = hospitalSetService.getById(id);
         return Result.ok(hospitalSet);
     }
 
     //6.修改医院设置
-    @PostMapping("updateHospSet")
+    @PostMapping("updateHospitalSet")
     public Result updateHospSet(@RequestBody HospitalSet hospitalSet){
         boolean flag = hospitalSetService.updateById(hospitalSet);
         if (flag){
@@ -127,7 +130,8 @@ public class HospitalSetController {
 
     //8 医院设置锁定和解锁
     @PutMapping("lockHospitalSet/{id}/{status}")
-    public Result lockHospitalSet(@PathVariable Long id,Integer status){
+    public Result lockHospitalSet(@PathVariable Long id,@PathVariable Integer status){
+
         HospitalSet hospitalSet = hospitalSetService.getById(id);
         hospitalSet.setStatus(status);
         hospitalSetService.updateById(hospitalSet);
@@ -136,6 +140,15 @@ public class HospitalSetController {
 
 
     //9 发送签名密钥
+    @PostMapping("sendKey/{id}")
+    public Result sendKey(@PathVariable Long id){
+        HospitalSet hospitalSet = hospitalSetService.getById(id);
+        hospitalSet.getSignKey();
+        hospitalSet.getHoscode();
+
+        //todo 发送短信
+        return Result.ok();
+    }
 
 
 }
